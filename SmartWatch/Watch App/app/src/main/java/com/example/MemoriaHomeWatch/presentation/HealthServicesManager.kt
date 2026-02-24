@@ -59,7 +59,7 @@ class HealthServicesManager(
         }
     }
 
-    // passive monitoring Service's not ready yet
+    // passive monitoring Service's not ready yet use (useService = false) for Passive Data Callback
     fun startPassiveMonitoring(dataType: DataType<*, *>, dataReceived: (DataType<*, *>, DataPointContainer) -> Unit, useService: Boolean){
         val passiveListenerConfig = PassiveListenerConfig.builder()
             .setDataTypes(setOf(dataType))
