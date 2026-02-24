@@ -11,6 +11,7 @@ import androidx.work.Worker
 import androidx.work.WorkerParameters
 import kotlinx.coroutines.runBlocking
 
+// still working on it
 class StartupReceiver : BroadcastReceiver() {
     override fun onReceive(p0: Context, p1: Intent) {
         if (p1.action != Intent.ACTION_BOOT_COMPLETED) return
