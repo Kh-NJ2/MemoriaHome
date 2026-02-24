@@ -31,23 +31,11 @@ import androidx.wear.tooling.preview.devices.WearDevices
 import com.example.MemoriaHomeWatch.BuildConfig
 import com.example.MemoriaHomeWatch.R
 import com.example.MemoriaHomeWatch.presentation.theme.ConnectToHubTheme
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken
-import org.eclipse.paho.client.mqttv3.MqttCallback
-import org.eclipse.paho.client.mqttv3.MqttClient
-import org.eclipse.paho.client.mqttv3.MqttConnectOptions
-import org.eclipse.paho.client.mqttv3.MqttException
-import org.eclipse.paho.client.mqttv3.MqttMessage
-import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
-// samsung Health service sdk
 
 
 class MainActivity : ComponentActivity() {
 
     companion object {
-        private const val TAG = "MainActivity"
         private lateinit var mqtt: MQTTManager
 
     }

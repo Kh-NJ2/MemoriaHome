@@ -1,6 +1,5 @@
 package com.example.MemoriaHomeWatch.presentation
 
-import android.R.attr.text
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
@@ -110,6 +109,7 @@ class TrackingActivity : ComponentActivity(), SensorEventListener {
                     }
                     continue
                 }
+                // Handle other data types as needed
             }
         }
     }
