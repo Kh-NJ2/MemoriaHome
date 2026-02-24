@@ -1,6 +1,6 @@
 package com.example.MemoriaHomeWatch.presentation
 
-import android.content.Intent
+import android.R.attr.text
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
@@ -19,6 +19,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.health.services.client.data.DataPointContainer
@@ -38,50 +39,45 @@ import kotlinx.coroutines.launch
 
 class TrackingActivity : ComponentActivity(), SensorEventListener {
 
-    companion object {
+    companion object { // companion objects can be referenced from another class
         val TAG = "TrackActivityy"
-        fun dataHandle2(type: DataType<*, *>, data: DataPointContainer){
-            when (type){
-                DataType.HEART_RATE_BPM -> {
-                    val heartRatePoints = data.getData(DataType.HEART_RATE_BPM)
-                    if (heartRatePoints.isNotEmpty()) {
-                        val latest = heartRatePoints.last()
-                        Log.d(TAG, "HEART_RATE_BPM: ${latest.value}")
-                    } else {
-                        Log.d(TAG, "No heart rate data received")
-                    }
-                }
-                else -> {
-                    // add more for more sensors
-                    Log.d(TAG, "No heart rate data received")
-                }
+
+        // handles data from the PasswiveMonitoringClient in HealthServiceManager (google's Health Service API)
+        fun dataHandlePassive(data: DataPointContainer){
+            val heartRatePoints = data.getData(DataType.HEART_RATE_BPM)
+            if (heartRatePoints.isNotEmpty()) {
+                val latest = heartRatePoints.last()
+                Log.d(TAG, "HEART_RATE_BPM: ${latest.value}")
             }
+            // Handle other data types as needed
         }
     }
-    private var isTrackingBPM = false
-    private var isTrakingAcclr = false
+//    private var isTrackingBPM = false
+//    private var isTrakingAcclr = false
     private var buttontext by mutableStateOf("Restart Tracking")
     private var isTracking by mutableStateOf(false)
-    lateinit var healthSDKManager: HealthSDKManager
-    lateinit var healthServicesManager: HealthServicesManager
-    private lateinit var mSensorManager : SensorManager
+
+    lateinit var healthSDKManager: HealthSDKManager // samsung's
+    lateinit var healthServicesManager: HealthServicesManager // google's
+    private lateinit var mSensorManager : SensorManager // interacts with hardware
     private var offBodySensor : Sensor? = null
-    // trackers
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-//        val intent = Intent(this, ForegroundService::class.java)
-
-//        healthSDKManager = HealthSDKManager(this,
+//        healthSDKManager = HealthSDKManager(this,      ///// initialize samsung's Health Tracking SDK
 //            {startTracking()},
 //            {it.resolve(this)},
-//            {type, p0 -> dataHandle(type, p0)})
+//            {type, p0 -> dataHandleSDK(type, p0)})
+//
+//        healthSDKManager.connect()
+//        healthSDKManager.startTracker(HealthTrackerType.HEART_RATE_CONTINUOUS)
+//        healthSDKManager.startTracker(HealthTrackerType.ACCELEROMETER_CONTINUOUS)
 
-        //healthSDKManager.connect()
 
-//        healthServicesManager = HealthServicesManager(this)
-//        healthServicesManager.startPassiveMonitoring(DataType.HEART_RATE_BPM, {type, data -> dataHandle2(type, data)}, false)
+//        healthServicesManager = HealthServicesManager(this)      ///// initialize google's Health Service
+//        healthServicesManager.startPassiveMonitoring(DataType.HEART_RATE_BPM, {type, data -> dataHandlePassive(data)}, false)
 
         setContent {
             MaterialTheme {
@@ -91,8 +87,8 @@ class TrackingActivity : ComponentActivity(), SensorEventListener {
     }
 
 
-
-    private fun dataHandle(type: HealthTrackerType, p0: List<DataPoint?>) {
+    // handles data from the HealthSDKManager (Samsung's Health Tracking SDK)
+    private fun dataHandleSDK(type: HealthTrackerType, p0: List<DataPoint?>) {
         lifecycleScope.launch(Dispatchers.Default) {
             for (data in p0) {
                 data ?: continue
@@ -114,6 +110,25 @@ class TrackingActivity : ComponentActivity(), SensorEventListener {
                     }
                     continue
                 }
+            }
+        }
+    }
+
+    // handles data from the MeasureClient in HealthServiceManager (google's Health Service API) i think we can combine it with the dataHandlePassive() later
+    fun dataHandleMeassure(type: DataType<*, *>, data: DataPointContainer){
+        when (type){
+            DataType.HEART_RATE_BPM -> {
+                val heartRatePoints = data.getData(DataType.HEART_RATE_BPM)
+                if (heartRatePoints.isNotEmpty()) {
+                    val latest = heartRatePoints.last()
+                    Log.d(TAG, "HEART_RATE_BPM: ${latest.value}")
+                } else {
+                    Log.d(TAG, "No heart rate data received")
+                }
+            }
+            else -> {
+                // Handle other data types as needed
+                Log.d(TAG, "No heart rate data received")
             }
         }
     }
@@ -162,7 +177,7 @@ class TrackingActivity : ComponentActivity(), SensorEventListener {
         if(isTracking){
             if(::mSensorManager.isInitialized){ mSensorManager.unregisterListener(this); }
             //healthSDKManager.pauseAllTrackers()
-            buttontext = "start tracking"
+            buttontext = "Start Tracking"
             isTracking = false
         } else {
             startOffBodySensor()
@@ -181,7 +196,9 @@ fun TrackAppUi(onExit: () -> Unit, buttontext: String) {
             contentAlignment = Alignment.Center
         ) {
             Button(onClick = onExit, modifier = Modifier.size(100.dp)) {
-                Text(buttontext)
+                Text(
+                    text = buttontext,
+                    textAlign = TextAlign.Center)
             }
         }
     }
@@ -196,6 +213,6 @@ fun TrackAppUi(onExit: () -> Unit, buttontext: String) {
 @Composable
 fun TrackingActivityPreview() {
     MaterialTheme {
-        TrackAppUi(onExit = {}, buttontext = "Stop Tracking")
+        TrackAppUi(onExit = {}, buttontext = "Restart Tracking")
     }
 }

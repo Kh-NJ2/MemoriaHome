@@ -14,50 +14,54 @@ import com.samsung.android.service.health.tracking.data.HealthTrackerType
 class HealthSDKManager (
     private val context: Context,
     private val onConnected: () -> Unit,
-    private val onResolutionRequired: (HealthTrackerException) -> Unit,
-    private val dataReceived: (HealthTrackerType, List<DataPoint?>) -> Unit
+    private val onResolution: (HealthTrackerException) -> Unit,         // function to be called when resolution is required (see the onConnectionFailed function bellow)
+    private val dataReceived: (HealthTrackerType, List<DataPoint?>) -> Unit    // function to be called when data is received (see the onDataReceived function bellow) (mainly to pass data to another activity)
     ) {
     private val TAG = "TrackActivityy"
     private var isConnected = false
     private var activeTrackers = mutableMapOf<HealthTrackerType, HealthTracker>()
     private var activeListeners = mutableMapOf<HealthTrackerType, TrackerEventListener>()
     lateinit var healthTrackingService: HealthTrackingService
+
+    // handles connection to Health Tracking Service
     val connectionListener = object : ConnectionListener {
-        override fun onConnectionSuccess() {
+        override fun onConnectionSuccess() {  // do when connected
             Log.d(TAG, "Connection success")
             isConnected = true
             onConnected()
         }
 
-        override fun onConnectionEnded() {
+        override fun onConnectionEnded() { // do when disconnects (or when app/activity is closed)
             resetAllTrackers()
             isConnected = false
             Log.d(TAG, "Connection ENDED")
         }
 
-        override fun onConnectionFailed(e: HealthTrackerException) {
+        override fun onConnectionFailed(e: HealthTrackerException) { // do when connection fails
             isConnected = false
             if (e.hasResolution()) {
-                onResolutionRequired(e)
+                onResolution(e)
                 Log.d(TAG, "Connection FAILED")
             }
         }
     }
 
+    // creates a listener for each sensor type (when u start monitoring multiple sensors)
     private fun createListenerForType(type: HealthTrackerType): TrackerEventListener{
         return object : TrackerEventListener {
             override fun onError(error: TrackerError?) {
                 Log.d(TAG, "TRACKER ERRORRRR!!!!!!!!!!! : $error")
             }
 
-            override fun onDataReceived(p0: List<DataPoint?>) {
+            override fun onDataReceived(p0: List<DataPoint?>) { // do when listener receives data
                 if (p0.isNotEmpty()) {
-                    dataReceived(type, p0)
+                    dataReceived(type, p0)  // passes the data to the function defined in the trackingActivity
                 } else {
                     Log.d(TAG, "No heart rate data received")
                 }
             }
             override fun onFlushCompleted() {
+
             }
         }
     }
@@ -66,7 +70,7 @@ class HealthSDKManager (
         healthTrackingService = HealthTrackingService(connectionListener, context)
         healthTrackingService.connectService()
     }
-    fun disconnect(){
+    fun disconnect(){   // reset all trackers and disconnect from service
         resetAllTrackers()
         if(::healthTrackingService.isInitialized) { healthTrackingService.disconnectService() }
         isConnected = false
@@ -103,19 +107,26 @@ class HealthSDKManager (
         Log.d(TAG, "Tracker ${type.name} is not active")
     }
 
-    fun pauseAllTrackers(){
+    fun pauseAllTrackers(){     // used for when the watch is removed (pauses but never deletes registered sensors - can be resumed through the resumeAllTrackers())
         activeTrackers.values.forEach { it.unsetEventListener() }
         Log.d(TAG, "All trackers paused")
     }
 
-    fun resumeAllTrackers(){
+    fun resumeAllTrackers(){   // gets called when the watch is re-added (resumes all registered sensors)
         activeTrackers.forEach { (type, tracker) ->
             val listener = activeListeners[type] ?: createListenerForType(type)
             tracker.setEventListener(listener) }
         Log.d(TAG, "All trackers resumed")
     }
 
-    fun resetAllTrackers(){
+    fun flushTracker(tracker: HealthTrackerType) {   // Flushing data gives collected data instantly.
+        if(tracker in activeTrackers.keys){
+            activeTrackers[tracker]?.flush()
+            Log.d(TAG, "Flushed tracker ${tracker.name}")
+        }
+    }
+
+    fun resetAllTrackers(){   // gets called when the app is closed or service disconnect (deletes all registered sensors)
         pauseAllTrackers()
         activeTrackers.clear()
         activeListeners.clear()

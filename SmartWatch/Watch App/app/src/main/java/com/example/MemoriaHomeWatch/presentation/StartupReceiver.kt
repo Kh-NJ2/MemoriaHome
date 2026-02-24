@@ -30,8 +30,8 @@ class RegisterForPassiveDataWorker(
 
     override fun doWork(): Result {
         runBlocking {
-            HealthServicesManager(appContext).startPassiveMonitoring(DataType.HEART_RATE_BPM,
-                {type, data -> TrackingActivity.dataHandle2(type, data)},
+            HealthServicesManager(appContext).startPassiveMonitoring(setOf(DataType.HEART_RATE_BPM),
+                {data -> TrackingActivity.dataHandlePassive(data)},
                 false)
         }
         return Result.success()

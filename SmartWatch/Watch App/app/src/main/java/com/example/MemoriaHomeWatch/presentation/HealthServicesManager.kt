@@ -60,9 +60,11 @@ class HealthServicesManager(
     }
 
     // passive monitoring Service's not ready yet
-    fun startPassiveMonitoring(dataType: DataType<*, *>, dataReceived: (DataType<*, *>, DataPointContainer) -> Unit, useService: Boolean){
+    // PassiveMonitoringClient only allows one callback to be registered at a time for the whole app
+    // the second call will replace the first one
+    fun startPassiveMonitoring(dataType: Set<DataType<*, *>>, dataReceived: (DataPointContainer) -> Unit, useService: Boolean){
         val passiveListenerConfig = PassiveListenerConfig.builder()
-            .setDataTypes(setOf(dataType))
+            .setDataTypes(dataType)
             .build()
         Log.d(TAG, "Starting passive monitoring")
 
@@ -74,7 +76,7 @@ class HealthServicesManager(
             val passiveListenerCallback: PassiveListenerCallback =
                 object : PassiveListenerCallback {
                     override fun onNewDataPointsReceived(dataPoints: DataPointContainer) {
-                        dataReceived(dataType, dataPoints)
+                        dataReceived(dataPoints)
                     }
                 }
             passiveMonitoringClient.setPassiveListenerCallback(passiveListenerConfig, passiveListenerCallback)

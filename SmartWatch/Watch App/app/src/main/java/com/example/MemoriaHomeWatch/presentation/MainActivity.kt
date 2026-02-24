@@ -2,7 +2,6 @@ package com.example.MemoriaHomeWatch.presentation
 
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Arrangement
@@ -47,7 +46,13 @@ import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
 
 class MainActivity : ComponentActivity() {
 
-    private lateinit var mqttClient: MqttClient
+    companion object {
+        private const val TAG = "MainActivity"
+        private lateinit var mqtt: MQTTManager
+
+    }
+
+
     private var receivedMessage by mutableStateOf("No message received")
 
 
@@ -56,82 +61,21 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setTheme(android.R.style.Theme_DeviceDefault)
 
-        mqttConnect(BuildConfig.MQTT_BROKER)
+        mqtt = MQTTManager { message ->
+            receivedMessage = message
+        }
+        mqtt.mqttConnect(BuildConfig.MQTT_BROKER, BuildConfig.MQTT_USERNAME, BuildConfig.MQTT_PASSWORD, false ) // retrieves MQTT_BROKER from /local.properties *see gradle.kts(:app)*
 
         setContent {
             ConnectToHubTheme {
                 WearApp(
                     message = receivedMessage,
-                    onButtonClick1 = { mqttSubscribe("to-watch", 1) },
-                    onButtonClick2 = { mqttPublish("watch-data", "this is a test", 1) },
+                    onButtonClick1 = { mqtt.mqttSubscribe("to-watch", 1) },
+                    onButtonClick2 = { mqtt.mqttPublish("watch-data", "this is a test", 1) },
                     onButtonClick3 = { startActivity(Intent(this, PermissionActivity::class.java)) }
                 )
             }
         }
-    }
-
-    fun mqttConnect(brokeraddr: String) {
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                val clientId = MqttClient.generateClientId()
-                mqttClient = MqttClient("tcp://$brokeraddr:1883", clientId, MemoryPersistence())
-
-                val connOptions = MqttConnectOptions()
-                connOptions.userName = BuildConfig.MQTT_USERNAME
-                connOptions.password = BuildConfig.MQTT_PASSWORD.toCharArray()
-                connOptions.isCleanSession = true
-
-                mqttClient.connect(connOptions)
-                Log.d("MQTT", "Connected!")
-
-                mqttSetReceiveListener()
-
-            } catch (e: MqttException) {
-                Log.e("MQTT", "Connection failed: ${e.message}")
-                e.printStackTrace()
-            }
-        }
-    }
-
-    fun mqttPublish(topic: String, msg: String, qos: Int) {
-        try {
-            val mqttMessage = MqttMessage(msg.toByteArray(charset("UTF-8")))
-            mqttMessage.qos = qos
-            mqttMessage.isRetained = false
-            // Publish the message
-            mqttClient.publish(topic, mqttMessage)
-        } catch (e: Exception) {
-            Log.e("MQTT", "Publish failed: ${e.message}")
-        }
-    }
-
-    fun mqttSubscribe(topic: String, qos: Int) {
-        try {
-            mqttClient.subscribe(topic, qos)
-        } catch (e: Exception) {
-            Log.e("MQTT", "Subscribe failed: ${e.message}")
-        }
-
-    }
-    fun mqttSetReceiveListener() {
-        mqttClient.setCallback(object : MqttCallback {
-            override fun connectionLost(cause: Throwable) {
-            // Connection Lost
-            }
-
-            override fun messageArrived(topic: String, message: MqttMessage) {
-                // A message has been received
-                val data = String(message.payload, charset("UTF-8"))
-                Log.d("MQTT", "Message Arrived : $data")
-                // Place the message into a specific TextBox object
-                CoroutineScope(Dispatchers.Main).launch {
-                    receivedMessage = data
-                }
-            }
-
-            override fun deliveryComplete(token: IMqttDeliveryToken) {
-            }
-        })
     }
 }
 
