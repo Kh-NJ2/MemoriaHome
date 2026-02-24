@@ -1,5 +1,6 @@
 package com.example.MemoriaHomeWatch.presentation
 
+import android.content.Intent
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
@@ -7,6 +8,7 @@ import android.hardware.SensorManager
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
+import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,133 +21,110 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.fragment.app.FragmentActivity
+import androidx.health.services.client.data.DataPointContainer
+import androidx.health.services.client.data.DataType
+import androidx.lifecycle.lifecycleScope
 import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Scaffold
 import androidx.wear.compose.material.Text
 import androidx.wear.tooling.preview.devices.WearDevices
-import com.samsung.android.service.health.tracking.ConnectionListener
-import com.samsung.android.service.health.tracking.HealthTracker
-import com.samsung.android.service.health.tracking.HealthTracker.TrackerError
-import com.samsung.android.service.health.tracking.HealthTracker.TrackerEventListener
-import com.samsung.android.service.health.tracking.HealthTrackerException
-import com.samsung.android.service.health.tracking.HealthTrackingService
 import com.samsung.android.service.health.tracking.data.DataPoint
 import com.samsung.android.service.health.tracking.data.HealthTrackerType
 import com.samsung.android.service.health.tracking.data.ValueKey
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 
-class TrackingActivity : FragmentActivity(), SensorEventListener {
+class TrackingActivity : ComponentActivity(), SensorEventListener {
 
-    companion object{
-        private const val TAG = "TrackActivityy"
+    companion object {
+        val TAG = "TrackActivityy"
+        fun dataHandle2(type: DataType<*, *>, data: DataPointContainer){
+            when (type){
+                DataType.HEART_RATE_BPM -> {
+                    val heartRatePoints = data.getData(DataType.HEART_RATE_BPM)
+                    if (heartRatePoints.isNotEmpty()) {
+                        val latest = heartRatePoints.last()
+                        Log.d(TAG, "HEART_RATE_BPM: ${latest.value}")
+                    } else {
+                        Log.d(TAG, "No heart rate data received")
+                    }
+                }
+                else -> {
+                    // add more for more sensors
+                    Log.d(TAG, "No heart rate data received")
+                }
+            }
+        }
     }
-
+    private var isTrackingBPM = false
+    private var isTrakingAcclr = false
     private var buttontext by mutableStateOf("Restart Tracking")
     private var isTracking by mutableStateOf(false)
-
-    lateinit var healthTrackingService: HealthTrackingService
+    lateinit var healthSDKManager: HealthSDKManager
+    lateinit var healthServicesManager: HealthServicesManager
     private lateinit var mSensorManager : SensorManager
     private var offBodySensor : Sensor? = null
     // trackers
-    lateinit var bpmContinuousTracker : HealthTracker
-
-    // LISTENERS
-    private val connectionListener = object : ConnectionListener {
-        override fun onConnectionSuccess() {
-            // Connection success.
-            Log.d(TAG, "Connection success")
-            // Tracking Data
-            startAllTrackings()
-            // Capability Check
-        }
-
-        override fun onConnectionEnded() {
-            // Connection is ended.
-            endAllTrackings()
-            Log.d(TAG, "Connection ENDED")
-        }
-
-        override fun onConnectionFailed(e: HealthTrackerException) {
-            if (e.hasResolution()) {
-                Log.d(TAG, "Connection FAILED")
-                e.resolve(this@TrackingActivity)
-            }
-        }
-    }
-    private val trackerListener = object : TrackerEventListener {
-
-        override fun onError(error: TrackerError?) {
-            Log.d(TAG, "TRACKER ERRORRRR!!!!!!!!!!!")
-        }
-
-        override fun onDataReceived(p0: List<DataPoint?>) {
-            if (p0.isNotEmpty()) {
-                for(data in p0){
-                    val value = data?.getValue(ValueKey.HeartRateSet.HEART_RATE)
-                    Log.d(TAG, "Heart Rate: $value")
-                }
-            } else {
-                Log.d(TAG, "No heart rate data received")
-            }
-        }
-
-        override fun onFlushCompleted() {
-            // Flushing data is completed.
-        }
-    }
-
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-//        val permissions = arrayOf(Manifest.permission.)
-//        val isAllowed = PermissionActivity.checkPermission(this, permissions)
-//
-//        if (isAllowed) {
-//
-//        } else {
-//            Log.e("SubActivity", "Blocked: Permissions not granted.")
-//            finish()
-//            return
-//        }
+//        val intent = Intent(this, ForegroundService::class.java)
 
-        connectHealthService()
+//        healthSDKManager = HealthSDKManager(this,
+//            {startTracking()},
+//            {it.resolve(this)},
+//            {type, p0 -> dataHandle(type, p0)})
+
+        //healthSDKManager.connect()
+
+//        healthServicesManager = HealthServicesManager(this)
+//        healthServicesManager.startPassiveMonitoring(DataType.HEART_RATE_BPM, {type, data -> dataHandle2(type, data)}, false)
 
         setContent {
             MaterialTheme {
-                TrackAppUi(onExit = {if(isTracking){endAllTrackings()}else{connectHealthService()}}, buttontext)
+                TrackAppUi(onExit = {buttonClicked()}, buttontext)
             }
         }
     }
 
+
+
+    private fun dataHandle(type: HealthTrackerType, p0: List<DataPoint?>) {
+        lifecycleScope.launch(Dispatchers.Default) {
+            for (data in p0) {
+                data ?: continue
+
+                if(type == HealthTrackerType.HEART_RATE_CONTINUOUS){
+                    val hrData = data.getValue(ValueKey.HeartRateSet.HEART_RATE)
+                    launch(Dispatchers.Main) {
+                        // UI changes
+                        Log.d(TAG, "Heart Rate: $hrData")
+                    }
+                    continue
+                }
+                if (type == HealthTrackerType.ACCELEROMETER_CONTINUOUS){
+                    val accelDataX = data.getValue(ValueKey.AccelerometerSet.ACCELEROMETER_X)
+                    val accelDataY = data.getValue(ValueKey.AccelerometerSet.ACCELEROMETER_Y)
+                    val accelDataZ = data.getValue(ValueKey.AccelerometerSet.ACCELEROMETER_Z)
+                    launch(Dispatchers.Main) {
+                        Log.d(TAG, "Accelerometer X: $accelDataX, Accelerometer Y: $accelDataY, Accelerometer Z: $accelDataZ")
+                    }
+                    continue
+                }
+            }
+        }
+    }
+
+
+
     override fun onDestroy() {
         super.onDestroy()
-        endAllTrackings()
-    }
-
-    private fun connectHealthService() {
-        healthTrackingService = HealthTrackingService(connectionListener, this)
-        healthTrackingService.connectService()
-    }
-    private fun startAllTrackings() {
-        bpmContinuousTracker = healthTrackingService.getHealthTracker(HealthTrackerType.HEART_RATE_CONTINUOUS)
-        startOffBodySensor()
-        startTracking(bpmContinuousTracker)
-        buttontext = "Stop Tracking"
-        isTracking = true
-    }
-
-    fun startTracking(continuousTracker: HealthTracker? = null) {
-        Log.d(TAG, "Starting tracker")
-        continuousTracker?.setEventListener(trackerListener)
-    }
-
-    fun stopTracking(continuousTracker: HealthTracker? = null) {
-        continuousTracker?.unsetEventListener()
-        Log.d(TAG, "Stopped tracking")
+        Log.d(TAG, "TrackingActivity Destroyed")
+        if(::mSensorManager.isInitialized){ mSensorManager.unregisterListener(this); }
+        //healthSDKManager.disconnect()
     }
 
     override fun onAccuracyChanged(p0: Sensor?, p1: Int) {
@@ -153,40 +132,47 @@ class TrackingActivity : FragmentActivity(), SensorEventListener {
     }
 
     override fun onSensorChanged(p0: SensorEvent?) {
-        val offBodyDataFloat = p0?.values[0];
-        val offBodyData = offBodyDataFloat?.toInt();
+        val offBodyDataFloat = p0?.values[0]
+        val offBodyData = offBodyDataFloat?.toInt()
         if (offBodyData == 1){
             Log.d(TAG, "Watch is being worn")
-            startTracking(bpmContinuousTracker)
+            //healthSDKManager.resumeAllTrackers()
         } else {
             Log.d(TAG, "Watch is NOT being worn")
-            Toast.makeText(this, "Watch removed",Toast.LENGTH_LONG).show();
-            stopTracking(bpmContinuousTracker)
+            Toast.makeText(this, "Watch removed",Toast.LENGTH_LONG).show()
+            //healthSDKManager.pauseAllTrackers()
         }
     }
 
     private fun startOffBodySensor(){
         mSensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
-        offBodySensor = mSensorManager.getDefaultSensor(Sensor.TYPE_LOW_LATENCY_OFFBODY_DETECT);
-        mSensorManager.registerListener(this, offBodySensor, SensorManager.SENSOR_DELAY_NORMAL);
+        offBodySensor = mSensorManager.getDefaultSensor(Sensor.TYPE_LOW_LATENCY_OFFBODY_DETECT)
+        mSensorManager.registerListener(this, offBodySensor, SensorManager.SENSOR_DELAY_NORMAL)
     }
 
-    private fun endAllTrackings(){
-        if(::mSensorManager.isInitialized){ mSensorManager.unregisterListener(this); }
-        if(::bpmContinuousTracker.isInitialized){ stopTracking(bpmContinuousTracker) }
-        if(::healthTrackingService.isInitialized) { healthTrackingService.disconnectService() }
-        buttontext = "start tracking"
-        isTracking = false
+    private fun startTracking() {
+        startOffBodySensor()
+        //healthSDKManager.startTracker(HealthTrackerType.ACCELEROMETER_CONTINUOUS)
+        //healthSDKManager.startTracker(HealthTrackerType.HEART_RATE_CONTINUOUS)
+        buttontext = "Stop Tracking"
+        isTracking = true
     }
 
-    fun flushHeartRate() {
-        // Flushing data gives collected data instantly.
-        val heartRateContinuousTracker = healthTrackingService.getHealthTracker(HealthTrackerType.HEART_RATE)
-        heartRateContinuousTracker.flush()
+    private fun buttonClicked(){
+        if(isTracking){
+            if(::mSensorManager.isInitialized){ mSensorManager.unregisterListener(this); }
+            //healthSDKManager.pauseAllTrackers()
+            buttontext = "start tracking"
+            isTracking = false
+        } else {
+            startOffBodySensor()
+            //healthSDKManager.resumeAllTrackers()
+            buttontext = "Stop Tracking"
+            isTracking = true
+        }
     }
-
-
 }
+
 @Composable
 fun TrackAppUi(onExit: () -> Unit, buttontext: String) {
     Scaffold {
