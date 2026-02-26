@@ -76,7 +76,7 @@ class TrackingActivity : ComponentActivity(), SensorEventListener {
 
 
 //        healthServicesManager = HealthServicesManager(this)      ///// initialize google's Health Service
-//        healthServicesManager.startPassiveMonitoring(DataType.HEART_RATE_BPM, {type, data -> dataHandlePassive(data)}, false)
+//        healthServicesManager.startPassiveMonitoring(setOf(DataType.HEART_RATE_BPM), {data -> dataHandlePassive(data)}, false)
 
         setContent {
             MaterialTheme {
