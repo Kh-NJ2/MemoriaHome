@@ -406,7 +406,7 @@ footer{
 
 /* Geriatric page background */
 #geriatric-page {
-    background-image: url('bg_geriatric.png');
+    background-image: url('../Assets/bg_geriatric.png');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -591,6 +591,7 @@ footer{
 }
 
 .medical-card{
+  opacity: 70%;
   background:#C8E2D9;
   padding-left:25px;
   padding-right:25px;
@@ -651,6 +652,7 @@ footer{
 .btn-icon{
   width:18px;
   height:18px;
+  top:2px; 
 }
 
 .medical-card-inside{
@@ -660,8 +662,184 @@ footer{
   align-items:center;
   height:100%;
   padding:20px;
+  opacity: 0.9;
 }
 
 .new-plan{
     margin-top: 400px;
+}
+
+/* Assessment Form */
+
+.assessment-form{
+  display:flex;
+  flex-direction:column;   /* stack inputs vertically */
+  gap:12px;                /* equal spacing between inputs */
+  margin-top:20px;
+  max-width:400px;
+  margin-left:auto;
+  margin-right:auto;
+}
+
+.assessment-form input,
+.assessment-form textarea{
+  padding:8px;
+  border-radius:8px;
+  border:none;
+  box-shadow:0 2px 4px rgba(0,0,0,0.9);
+  font-family:'Judson', serif;
+  width:100%;
+  height: 40px;
+  font-size:24px;
+  color: #006D77;
+}
+
+.assessment-form input::placeholder,
+.assessment-form textarea::placeholder{
+  color: #006D77;
+  opacity: 60%;
+}
+
+.assessment-form textarea{
+  resize:none;
+  height: 40px;
+}
+
+.form-actions{
+  text-align:center;
+}
+
+.form-actions button{
+  width:110px;
+  box-shadow: white 0px 0px 0px 2px;
+  color: #01474D;
+  font-family: judson, serif;
+  background-color: #83C5BE;
+  align-items:center;      /* vertical alignment */
+  justify-content:center;  /* center content */
+  gap:6px;
+  font-size: 16px;
+  display: inline;
+}
+
+.form-actions button img{
+    top: 5px;
+}
+
+.medical-card-assessment{
+    background:#C8E2D9;
+    opacity: 70%;
+    padding:25px;
+    border-radius:15px;
+    width: 30%;
+    margin:20px auto;
+    box-shadow:0 4px 12px rgba(0,0,0,0.08);
+    text-align:center;
+    margin-bottom: 100px;
+}
+
+/* family-nurse page background */
+#family-nurse-page {
+    background-image: url('../Assets/family_nurse_bg.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    min-height: 100vh;
+}
+
+/* Home cards layout */
+
+.home-cards{
+  display:grid;
+  grid-template-rows: 1fr 1fr;
+  justify-content:center;
+  gap:40px;
+  margin-top:30px;
+  flex-wrap:wrap;
+  margin-bottom: 100px;
+}
+
+.home-card{
+  background:#C8E2D9;
+  padding:25px;
+  border-radius:15px;
+  width: 974px;;
+  box-shadow:0 4px 12px rgba(0,0,0,0.08);
+  background: rgba(200, 226, 217, 0.7);
+}
+
+/* 2x2 round sections */
+
+.round-sections-home {
+  display: grid;
+  grid-template-columns: 1fr 1fr;  /* Creates 2 columns */
+  gap: 20px;
+  justify-items: center;
+}
+
+.home-cards .home-card .round-sections-home .round-section {
+    position: relative; /* make parent the reference */
+}
+
+.home-cards .home-card .round-sections-home .round-section .alerts {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 20px;
+    background-color: #C62224;
+    color: white;
+    border-radius: 30px;
+    padding: 0 10px;
+    box-sizing: border-box;
+}
+
+.home-cards .home-card .round-sections-home .round-section .alerts img {
+    width: 30px;
+    height: 30px;
+}
+
+.scheduele{
+  align-items:center;      /* vertical alignment */
+  justify-content:center;  /* center content */
+  gap:6px;
+  font-size: 20px;
+  display: flex;
+}
+
+.scheduele img{
+    width: 30px;
+    height: 30px;
+}
+
+.reports{
+  align-items:center;      /* vertical alignment */
+  justify-content:center;  /* center content */
+  gap:6px;
+  font-size: 20px;
+  display: flex;
+}
+
+.reports img{
+    width: 30px;
+    height: 30px;
+}
+
+.reminders{
+  position: static;
+  align-items:center;      /* vertical alignment */
+  justify-content:center;  /* center content */
+  gap:6px;
+  font-size: 20px;
+  display: flex;
+}
+
+.reminders img{
+    width: 30px;
+    height: 30px;
 }

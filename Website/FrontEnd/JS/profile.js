@@ -7,7 +7,7 @@ const patients = [
     lastVisit: "SEP 9/25",
     nextCheck: "JUN 6/26",
     alert: "Active",
-    description: "Andrea Adams 78, mother of 3 and doesn’t work blah blah blah",
+    description: "Andrea Adams 78, mother of 3 and does not work blah blah blah",
     riskScore: 69,
     diagnoses: "severe dementia",
     medications: "anti psychosis meds",
@@ -73,9 +73,9 @@ document.addEventListener("DOMContentLoaded", () => {
           <div class="vital-item">Temperature: 36</div>
         </div>
         <div class="new-plan">
-            <button type="button" class="plan-btn">
-                <img src="plus.png" class="btn-icon">
-                Create New Assessment Plan
+            <button type="button" class="plan-btn" onclick="openAssessmentForm()">
+              Create New Assessment Plan
+              <img src="../Assets/plus.png" class="btn-icon">
             </button>
         </div>
       </div>
@@ -90,6 +90,43 @@ document.addEventListener("DOMContentLoaded", () => {
   // Activate Overview tab by default
   openProfileTab('overview');
 });
+
+
+// -------------------- Assessment Plan Form --------------------
+function openAssessmentForm() {
+
+  const medicalTab = document.getElementById("medical_history");
+
+  medicalTab.innerHTML = `
+  <div class="medical-card-assessment">
+
+    <form class="assessment-form">
+
+      <input type="text" placeholder="Assessment Type e.g Cognitive, Physical etc">
+
+      <textarea placeholder="Enter objectives"></textarea>
+
+      <input type="text" placeholder="Assigned Caregivers e.g Elena, Rose etc">
+
+      <textarea placeholder="Assigned Caregiver Tasks"></textarea>
+
+      <input type="text" placeholder="Timeline e.g 3 months">
+
+      <input type="date" placeholder="Follow-up Date">
+
+      <div class="form-actions">
+        <button type="submit">
+          Save
+          <img src="../Assets/check.png" class="btn-icon">
+          </button>
+      </div>
+
+    </form>
+
+  </div>
+  `;
+}
+
 
 // -------------------- Tab Switching Function --------------------
 function openProfileTab(tabId) {
