@@ -38,6 +38,7 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
     }
 
     const body = {
+      role: roleSelect.value,
       first_name: document.getElementById('first-name').value.trim(),
       last_name: document.getElementById('last-name').value.trim(),
       email: document.getElementById('email').value.trim(),
